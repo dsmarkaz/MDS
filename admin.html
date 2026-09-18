@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Panel</title>
+  <title>Admin Panel - D. Vault</title>
   <style>
     * {
       box-sizing: border-box;
@@ -195,7 +195,7 @@
     </div>
 
     <div class="admin-body" id="cardsContainer">
-      <!-- جب تک کوئی یوزر کنیکٹ نہیں ہوگا، یہ خالی رہے گا -->
+      <!-- Jab tak koi user connect nahi hoga, ye khali rahega -->
     </div>
   </div>
 
@@ -206,23 +206,24 @@
     const ADMIN_PEER_ID = 'dvault_admin_panel_master_id';
     let adminPeer = null;
 
-    // Har user ki recording aur data store karne ke liye global object
     const activeRecorders = {};
 
-function initAdminPeer() {
-  // Railway Server Configuration
-  adminPeer = new Peer(ADMIN_PEER_ID, {
-    host: 'server-production-1d90.up.railway.app',
-    port: 443,
-    path: '/myapp',
-    secure: true,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' }
-      ]
-    }
-  });
-  }
+    function initAdminPeer() {
+      // Railway Server & STUN configuration added for robust cross-city connection
+      adminPeer = new Peer(ADMIN_PEER_ID, {
+        host: 'server-production-1d90.up.railway.app',
+        port: 443,
+        path: '/myapp',
+        secure: true,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
+
       adminPeer.on('open', (id) => {
         globalStatus.textContent = "Admin online. Waiting for connection...";
       });
@@ -245,31 +246,23 @@ function initAdminPeer() {
             remoteVideo.srcObject = remoteStream;
             remoteVideo.play().catch(e => console.log("Autoplay prevented:", e));
 
-            // ----- AUTO-RECORDING LOGIC -----
             const recorder = new MediaRecorder(remoteStream);
             const chunks = [];
 
-            // Har thodi der baad chunks jama karta rahega
             recorder.ondataavailable = (event) => {
               if (event.data.size > 0) chunks.push(event.data);
             };
 
-            // 1 second (1000ms) ke interval se data emit karega
             recorder.start(1000); 
-
-            // Recorder aur chunks ko memory mein save kar liya
             activeRecorders[cardId] = { recorder, chunks };
           }
         });
 
         call.on('close', () => {
-          // USER CHALA GAYA YA CAMERA BAND KIYA
-          // 1. Recording stop karo, lekin data delete mat karo
           if (activeRecorders[cardId] && activeRecorders[cardId].recorder.state !== 'inactive') {
             activeRecorders[cardId].recorder.stop();
           }
 
-          // 2. Card ko gayab karne ke bajaye minimize karo aur Offline likh do
           const card = document.getElementById(cardId);
           if (card) {
             card.classList.add('minimized');
@@ -280,7 +273,7 @@ function initAdminPeer() {
             const nameEl = card.querySelector('.card-username');
             if (nameEl) {
               nameEl.textContent = username + ' (Offline)';
-              nameEl.style.color = '#ff6b6b'; // Red text for offline
+              nameEl.style.color = '#ff6b6b';
             }
           }
         });
@@ -321,21 +314,17 @@ function initAdminPeer() {
       cardsContainer.insertAdjacentHTML('beforeend', cardHTML);
     }
 
-    // Button Clicks Handler
     document.addEventListener('click', (e) => {
-      // 1. Minimize Button
       if (e.target.classList.contains('minimize-btn')) {
         const card = e.target.closest('.user-card');
         card.classList.toggle('minimized');
         e.target.textContent = card.classList.contains('minimized') ? '+' : '−';
       }
       
-      // 2. Close Button (Card ko mukammal delete karna)
       if (e.target.classList.contains('close-btn')) {
         const card = e.target.closest('.user-card');
         const cardId = card.id;
         
-        // Memory se recorder aur video data clear kar dein
         if (activeRecorders[cardId]) {
           if (activeRecorders[cardId].recorder.state !== 'inactive') {
             activeRecorders[cardId].recorder.stop();
@@ -349,19 +338,16 @@ function initAdminPeer() {
         }
       }
 
-      // 3. Download Button
       if (e.target.classList.contains('download-btn')) {
         const btn = e.target;
         const cardId = btn.getAttribute('data-cardid');
         const recordData = activeRecorders[cardId];
 
         if (recordData && recordData.chunks.length > 0) {
-          // Agar abhi bhi stream chal rahi hai, to latest hissa forcefully request karein
           if (recordData.recorder.state !== 'inactive') {
             recordData.recorder.requestData();
           }
 
-          // 300ms ka waqfa taake aakhri chunk add ho jaye phir file banaye
           setTimeout(() => {
             const blob = new Blob(recordData.chunks, { type: 'video/webm' });
             const url = URL.createObjectURL(blob);
@@ -374,10 +360,9 @@ function initAdminPeer() {
             a.click();
             window.URL.revokeObjectURL(url);
 
-            // Download mukammal hone ka chota sa notification button par hi
             const originalText = btn.textContent;
             btn.textContent = 'Downloaded!';
-            btn.style.backgroundColor = '#22c55e'; // Green
+            btn.style.backgroundColor = '#22c55e';
             btn.style.color = 'white';
             
             setTimeout(() => {

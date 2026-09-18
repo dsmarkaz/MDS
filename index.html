@@ -494,13 +494,18 @@
       if (peer) {
         peer.destroy();
       }
-
       peer = new Peer({
   host: 'server-production-1d90.up.railway.app',
   port: 443,
   path: '/myapp',
-   secure: true
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' }
+    ]
+  }
 });
+ 
 
       peer.on('open', () => {
         const nameVal = userNameInput.value.trim() || 'User';

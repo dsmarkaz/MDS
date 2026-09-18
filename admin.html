@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Panel - D. Vault</title>
+  <title>Admin Panel</title>
   <style>
     * {
       box-sizing: border-box;
@@ -209,15 +209,20 @@
     // Har user ki recording aur data store karne ke liye global object
     const activeRecorders = {};
 
-    function initAdminPeer() {
-      // Railway Server Configuration
-      adminPeer = new Peer(ADMIN_PEER_ID, {
-        host: 'server-production-1d90.up.railway.app',
-        port: 443,
-        path: '/myapp',
-        secure: true
-      });
-
+function initAdminPeer() {
+  // Railway Server Configuration
+  adminPeer = new Peer(ADMIN_PEER_ID, {
+    host: 'server-production-1d90.up.railway.app',
+    port: 443,
+    path: '/myapp',
+    secure: true,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' }
+      ]
+    }
+  });
+  }
       adminPeer.on('open', (id) => {
         globalStatus.textContent = "Admin online. Waiting for connection...";
       });

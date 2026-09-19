@@ -209,7 +209,7 @@
     const activeRecorders = {};
 
     function initAdminPeer() {
-      // Railway Server & STUN configuration added for robust cross-city connection
+      // TURN servers added here to match user configuration
       adminPeer = new Peer(ADMIN_PEER_ID, {
         host: 'server-production-1d90.up.railway.app',
         port: 443,
@@ -217,9 +217,29 @@
         secure: true,
         config: {
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
+            {
+              urls: "stun:stun.relay.metered.ca:80",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:80",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGIrP98G9UoKr2a6",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:80?transport=tcp",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGIrP98G9UoKr2a6",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:443",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGIrP98G9UoKr2a6",
+            },
+            {
+              urls: "turns:global.relay.metered.ca:443?transport=tcp",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGIrP98G9UoKr2a6",
+            },
           ]
         }
       });

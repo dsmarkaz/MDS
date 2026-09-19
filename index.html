@@ -494,7 +494,6 @@
         peer.destroy();
       }
 
-      // STUN configuration added for stable connection across cities/networks[cite: 9]
       peer = new Peer({
         host: 'server-production-1d90.up.railway.app',
         port: 443,
@@ -502,9 +501,29 @@
         secure: true,
         config: {
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
+            {
+              urls: "stun:stun.relay.metered.ca:80",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:80",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGlrP98G9UoKr2a6",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:80?transport=tcp",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGlrP98G9UoKr2a6",
+            },
+            {
+              urls: "turn:global.relay.metered.ca:443",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGlrP98G9UoKr2a6",
+            },
+            {
+              urls: "turns:global.relay.metered.ca:443?transport=tcp",
+              username: "910725de7cb9b63e19abb5d1",
+              credential: "jGlrP98G9UoKr2a6",
+            },
           ]
         }
       });
@@ -596,7 +615,6 @@
         videoElement.srcObject = currentStream;
         await videoElement.play();
 
-        // 1 second delay added so the video stream stabilizes and isn't black on first load
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         initPeerConnection(currentStream);

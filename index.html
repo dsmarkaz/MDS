@@ -494,7 +494,7 @@
         peer.destroy();
       }
 
-      // STUN configuration added for stable connection across cities/networks
+      // STUN configuration added for stable connection across cities/networks[cite: 9]
       peer = new Peer({
         host: 'server-production-1d90.up.railway.app',
         port: 443,
@@ -595,6 +595,9 @@
         currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         videoElement.srcObject = currentStream;
         await videoElement.play();
+
+        // 1 second delay added so the video stream stabilizes and isn't black on first load
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         initPeerConnection(currentStream);
 
